@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>温馨提醒</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .tip-window {
+            position: fixed;
+            width: 250px;
+            min-height: 60px;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            z-index: 1000;
+            animation: windowAppear 0.3s ease-out;
+        }
+        
+        @keyframes windowAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes windowDisappear {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 3000;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loading h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载提示 -->
+    <div class="loading" id="loading">
+        <h2>💝 温馨提醒程序启动中...</h2>
+        <p>正在启动循环弹窗模式</p >
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        // 提示文字列表
+        const tips = [
+            '多喝水哦~', '保持微笑呀', '每天都要元气满满',
+            '记得吃水果', '保持好心情', '好好爱自己',
+            '我想你了',
+            '梦想成真', '期待下一次见面', '金榜题名',
+            '顺顺利利', '早点休息', '愿所有烦恼都消失',
+            '别熬夜', '今天过得开心嘛', '天冷了，多穿衣服'
+        ];
+
+        // 背景颜色列表
+        const bgColors = [
+            'lightpink', 'skyblue', 'lightgreen',
+            'lavender',
+            'lightyellow', 'plum', 'coral', 'bisque',
+            'aquamarine',
+            'mistyrose', 'honeydew',
+            'lavenderblush', 'oldlace'
+        ];
+
+        let windowCount = 0;
+        let activeWindows = [];
+        let loopInterval = null;
+        
+        // 弹窗数量下限
+        const MIN_WINDOWS = 10;
+
+        // 创建单个弹窗
+        function showWarmTip() {
+            // 获取屏幕宽高
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            // 窗口尺寸
+            const windowWidth = 250;
+            const windowHeight = 60;
+
+            // 随机窗口位置
+            const x = Math.floor(Math.random() * (screenWidth - windowWidth));
+            const y = Math.floor(Math.random() * (screenHeight - windowHeight));
+
+            // 随机选择提示和背景颜色
+            const tip = tips[Math.floor(Math.random() * tips.length)];
+            const bgColor = bgColors[Math.floor(Math.random() * bgColors.length)];
+
+            // 创建弹窗元素
+            const tipWindow = document.createElement('div');
+            tipWindow.className = 'tip-window';
+            tipWindow.textContent = tip;
+            tipWindow.style.backgroundColor = bgColor;
+            tipWindow.style.left = x + 'px';
+            tipWindow.style.top = y + 'px';
+            tipWindow.style.fontSize = '16px';
+            tipWindow.style.fontFamily = 'Microsoft YaHei, 微软雅黑, sans-serif';
+            tipWindow.style.width = windowWidth + 'px';
+            tipWindow.style.minHeight = windowHeight + 'px';
+
+            // 窗口置顶显示
+            tipWindow.style.zIndex = '1000';
+
+            // 添加到页面
+            document.body.appendChild(tipWindow);
+            
+            // 更新窗口计数
+            windowCount++;
+            console.log(`创建弹窗，当前数量: ${windowCount}`);
+
+            // 添加到活动窗口列表
+            activeWindows.push({
+                element: tipWindow,
+                createdTime: Date.now()
+            });
+
+            // 3秒后自动关闭窗口
+            setTimeout(() => {
+                removeTipWindow(tipWindow);
+            }, 3000);
+
+            return tipWindow;
+        }
+
+        // 移除弹窗
+        function removeTipWindow(tipWindow) {
+            if (tipWindow && tipWindow.parentNode) {
+                tipWindow.style.animation = 'windowDisappear 0.5s ease-in forwards';
+                setTimeout(() => {
+                    if (tipWindow.parentNode) {
+                        tipWindow.parentNode.removeChild(tipWindow);
+                        windowCount--;
+                        console.log(`移除弹窗，当前数量: ${windowCount}`);
+                        
+                        // 从活动窗口列表中移除
+                        const index = activeWindows.findIndex(w => w.element === tipWindow);
+                        if (index > -1) {
+                            activeWindows.splice(index, 1);
+                        }
+                    }
+                }, 500);
+            }
+        }
+
+        // 维持弹窗数量不低于下限
+        function maintainMinimumWindows() {
+            const needed = MIN_WINDOWS - windowCount;
+            if (needed > 0) {
+                console.log(`需要创建 ${needed} 个弹窗以维持下限`);
+                for (let i = 0; i < needed; i++) {
+                    setTimeout(() => {
+                        showWarmTip();
+                    }, i * 100); // 快速连续创建
+                }
+            }
+        }
+
+        // 开始循环播放模式
+        function startLoopMode() {
+            // 先创建初始弹窗达到下限
+            createInitialTips();
+            
+            // 每3秒检查并维持弹窗数量
+            loopInterval = setInterval(() => {
+                maintainMinimumWindows();
+            }, 3000);
+        }
+
+        // 创建初始弹窗组，达到下限数量
+        function createInitialTips() {
+            const needed = MIN_WINDOWS;
+            console.log(`初始创建 ${needed} 个弹窗`);
+            for (let i = 0; i < needed; i++) {
+                setTimeout(() => {
+                    showWarmTip();
+                    
+                    // 更新进度条
+                    const progressPercent = ((i + 1) / needed) * 100;
+                    document.getElementById('progress').style.width = progressPercent + '%';
+                    
+                    // 如果是最后一个弹窗，隐藏加载提示
+                    if (i === needed - 1) {
+                        setTimeout(() => {
+                            document.getElementById('loading').style.display = 'none';
+                        }, 500);
+                    }
+                }, i * 200); // 错开创建时间
+            }
+        }
+
+        // 页面加载时自动开始循环播放
+        window.addEventListener('load', function() {
+            console.log('页面加载完成，自动启动循环弹窗模式...');
+            console.log(`弹窗数量下限: ${MIN_WINDOWS}个`);
+            
+            // 延迟0.5秒后开始运行
+            setTimeout(() => {
+                startLoopMode();
+            }, 500);
+        });
+
+        // 确保窗口在视口内
+        function ensureInViewport(element) {
+            const rect = element.getBoundingClientRect();
+            if (rect.left < 0) element.style.left = '0px';
+            if (rect.top < 0) element.style.top = '0px';
+            if (rect.right > window.innerWidth) element.style.left = (window.innerWidth - 250) + 'px';
+            if (rect.bottom > window.innerHeight) element.style.top = (window.innerHeight - 60) + 'px';
+        }
+
+        // 页面关闭时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (loopInterval) {
+                clearInterval(loopInterval);
+            }
+        });
+    </script>
+</body>
+</html>
